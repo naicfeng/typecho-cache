@@ -50,7 +50,7 @@ class MostCache_Action extends Typecho_Widget implements Widget_Interface_Do
      * 重设缓存
      */
     public function resetCache(){
-        
+        $config  = Helper::options()->plugin(self::$pluginName);
 	if($this->config->cacheMode=='Mysql'){#1.Mysql模式 				
             $table = $this->db->getPrefix().self::$tableName;
             $this->db->query("TRUNCATE TABLE $table ");			
