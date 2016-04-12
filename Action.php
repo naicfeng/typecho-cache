@@ -50,13 +50,12 @@ class MostCache_Action extends Typecho_Widget implements Widget_Interface_Do
      * 重设缓存
      */
     public function resetCache(){
-        $config  = Helper::options()->plugin(self::$pluginName);
 	if($this->config->cacheMode=='Mysql'){#1.Mysql模式 				
             $table = $this->db->getPrefix().self::$tableName;
             $this->db->query("TRUNCATE TABLE $table ");			
-	}else{#2.SAE模式
+	}else{#2.memcache模式
 		$mc = new Memcache;
-		$mc->connect($config->mem_server, $config->mem_prot) or die ("连接memcached服务器失败");
+		$mc->connect($this->config->mem_server, $this->config->mem_prot) or die ("连接memcached服务器失败");
 		$mc->flush();
 	}        
         $this->request->throwJson('success');
