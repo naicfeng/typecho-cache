@@ -97,8 +97,10 @@ class MostCache_Plugin implements Typecho_Plugin_Interface
     	$config  = Helper::options()->plugin(self::$pluginName);
     	$request = new Typecho_Request;
     	$requestHash = $request->getPathinfo();
-		#尝试获取缓存		
+		#尝试获取缓存
 		if($config->cacheType){
+//			$mtime = explode( ' ', microtime() );
+//			$timestart = $mtime[1] + $mtime[0];
                     $s = implode('|',$config->cacheType);
                     $preg = '/^('.$s.')/';
                     if(preg_match($preg,$requestHash)){
@@ -114,7 +116,16 @@ class MostCache_Plugin implements Typecho_Plugin_Interface
                                                     $installDb->query("UPDATE ".$installDb->getPrefix()."contents SET views=views+1 WHERE cid='$cid'");
                                             }
                                     }
-                                    echo $cache;
+//									$mtime2 = explode( ' ', microtime() );
+//									$timeend = $mtime2[1] + $mtime2[0];
+//									$timetotal = $timeend - $timestart;
+//									$r = number_format( $timetotal,6);
+//									$t1 = strpos($cache,'Processed in ');
+//									$t2 = strpos($cache,' (s)');
+//									$cache1 = substr($cache,0,$t1);
+//									$cache2 = substr($cache,$t2);
+//                                    echo $cache1.'Processed in '.$r.$cache2;
+									echo $cache;
                                     if($config->cacheTester) echo '<small style="font-size:10px;color:#bbb;">读取缓存内容::'.round((strlen($cache)/1024),2).'K</small>';
                                     exit;	
                             }
@@ -146,7 +157,7 @@ class MostCache_Plugin implements Typecho_Plugin_Interface
 	 */
 	public static function delCache($param,$param2){
 		if(is_object($param) and intval($param->cid)>0){#评论更新
-			self::del($param->pathinfo);
+			self::del($param->request->getPathinfo());
 		}elseif(is_array($param) and $param['text']){#发布文章更新
                         $config  = Helper::options()->plugin(self::$pluginName);
                         $s = implode('|',$config->cacheType);
@@ -235,6 +246,8 @@ class MostCache_Plugin implements Typecho_Plugin_Interface
                         self::del($v);                
                     }
                 }else{
+					$s = explode('/comment',$cachekey);
+					$cachekey = $s[0];
 			if($config->cacheMode=='Mysql'){
                             if($preg=strstr($cachekey, '*',TRUE)){
                                 $where = $preg.'%';
@@ -290,7 +303,7 @@ class MostCache_Plugin implements Typecho_Plugin_Interface
 		}
 	}
 
-    public static function personalConfig(\Typecho_Widget_Helper_Form $form) {
+    public static function personalConfig(Typecho_Widget_Helper_Form $form) {
         
     }
 }
