@@ -99,8 +99,6 @@ class MostCache_Plugin implements Typecho_Plugin_Interface
     	$requestHash = $request->getPathinfo();
 		#尝试获取缓存
 		if($config->cacheType){
-//			$mtime = explode( ' ', microtime() );
-//			$timestart = $mtime[1] + $mtime[0];
                     $s = implode('|',$config->cacheType);
                     $preg = '/^('.$s.')/';
                     if(preg_match($preg,$requestHash)){
@@ -116,15 +114,6 @@ class MostCache_Plugin implements Typecho_Plugin_Interface
                                                     $installDb->query("UPDATE ".$installDb->getPrefix()."contents SET views=views+1 WHERE cid='$cid'");
                                             }
                                     }
-//									$mtime2 = explode( ' ', microtime() );
-//									$timeend = $mtime2[1] + $mtime2[0];
-//									$timetotal = $timeend - $timestart;
-//									$r = number_format( $timetotal,6);
-//									$t1 = strpos($cache,'Processed in ');
-//									$t2 = strpos($cache,' (s)');
-//									$cache1 = substr($cache,0,$t1);
-//									$cache2 = substr($cache,$t2);
-//                                    echo $cache1.'Processed in '.$r.$cache2;
 									echo $cache;
                                     if($config->cacheTester) echo '<small style="font-size:10px;color:#bbb;">读取缓存内容::'.round((strlen($cache)/1024),2).'K</small>';
                                     exit;	
@@ -259,7 +248,8 @@ class MostCache_Plugin implements Typecho_Plugin_Interface
                             }		
 			}else{
 				$mc = $mc?$mc:self::intSaeMc();
-				$mc->delete('mk-'.$cachekey);  
+				$mc->delete('mk-'.$cachekey);
+				$mc->delete('mk-/');//更新首页评论数量
                         }
                     }
     }
