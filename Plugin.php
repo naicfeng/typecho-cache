@@ -274,7 +274,7 @@ class MostCache_Plugin implements Typecho_Plugin_Interface
 		try {
                         $installDb->query("CREATE TABLE `$cacheTable` (
                         `hash`      varchar(200)  NOT NULL,
-                        `cache`   text      NOT NULL,
+                        `cache`   longtext      NOT NULL,
                         `dateline` int(10) NOT NULL DEFAULT '0',
                         `expire`  int(8) NOT NULL DEFAULT '0',
                         UNIQUE KEY `hash` (`hash`)
