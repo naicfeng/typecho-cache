@@ -4,7 +4,7 @@
  * 
  * @package MostCache
  * @author skylzl,WeiCN
- * @version 1.1.0
+ * @version 1.1.1
  * @link http://www.phoneshuo.com
  */
 class MostCache_Plugin implements Typecho_Plugin_Interface
@@ -26,8 +26,8 @@ class MostCache_Plugin implements Typecho_Plugin_Interface
 		Typecho_Plugin::factory('Widget_Feedback')->finishComment = array(self::$pluginName . '_Plugin', 'delCache');
 		Typecho_Plugin::factory('Widget_Contents_Page_Edit')->write = array(self::$pluginName . '_Plugin', 'delCache');         
 		Typecho_Plugin::factory('Widget_Contents_Post_Edit')->write = array(self::$pluginName . '_Plugin', 'delCache');
-        Helper::addAction('mostcache', 'MostCache_Action');
-        Helper::addPanel(1, 'MostCache/panel.php', 'MostCache', 'MostCache缓存管理',   'administrator');
+//        Helper::addAction('mostcache', 'MostCache_Action');
+//        Helper::addPanel(1, 'MostCache/panel.php', 'MostCache', 'MostCache缓存管理',   'administrator');
         return _t($meg.'。请进行<a href="options-plugin.php?config='.self::$pluginName.'">初始化设置</a>');
     }
     
@@ -55,40 +55,65 @@ class MostCache_Plugin implements Typecho_Plugin_Interface
      */
     public static function config(Typecho_Widget_Helper_Form $form)
     {
-        $cacheMode = new Typecho_Widget_Helper_Form_Element_Radio(
+        $element = new Typecho_Widget_Helper_Form_Element_Radio(
           'cacheMode', array('Mysql' => 'Mysql', 'memcache' => 'memcache'), 'Mysql',
           '缓存模式', '一般选择Mysql,两种模式使用不同的缓存储存介质,Mysql模式使用mysql数据储存,memcache模式使用memcache数据储存。');
-        $form->addInput($cacheMode);
+        $form->addInput($element);
 
         $selectArr = array(
 			'\/$|\/page\/\d'=>'首页','\/category'=>'分类','\/archive'=>'内容页','\/.*?\.(htm|html)$'=>'独立页面'          
         );
 
-        $cacheType = new Typecho_Widget_Helper_Form_Element_Checkbox(
+        $element = new Typecho_Widget_Helper_Form_Element_Checkbox(
           'cacheType', $selectArr, array(),
           '缓存项目', 'Typecho 需要缓存的地方不多,一般为列表页、评论列表等列表性质的数据查询。缓存管理中可以对缓存规则进行自定义设置。');
-        $form->addInput($cacheType);
+        $form->addInput($element);
 		
-        $cacheTime = new Typecho_Widget_Helper_Form_Element_Text('cacheTime', NULL,1, _t('缓存时间'),'以天(24H)为时间单位,最小为1,最大不限制');
-        $form->addInput($cacheTime);
+        $element = new Typecho_Widget_Helper_Form_Element_Text('cacheTime', NULL,1, _t('缓存时间'),'以天(24H)为时间单位,最小为1,最大不限制');
+        $form->addInput($element);
 
-        $mem_server = new Typecho_Widget_Helper_Form_Element_Text('mem_server', NULL,'127.0.0.1', _t('memcache服务器地址'),'IP或者域名');
-        $form->addInput($mem_server);
+        $element = new Typecho_Widget_Helper_Form_Element_Text('mem_server', NULL,'127.0.0.1', _t('memcache服务器地址'),'IP或者域名');
+        $form->addInput($element);
 
-        $mem_prot = new Typecho_Widget_Helper_Form_Element_Text('mem_prot', NULL,'11211', _t('memcache服务器端口'),'整数端口');
-        $form->addInput($mem_prot);
+        $element = new Typecho_Widget_Helper_Form_Element_Text('mem_prot', NULL,'11211', _t('memcache服务器端口'),'整数端口');
+        $form->addInput($element);
 
-        $cacheCounter = new Typecho_Widget_Helper_Form_Element_Radio(
+        $element = new Typecho_Widget_Helper_Form_Element_Radio(
           'cacheCounter', array('0' => '否', '1' => '是'), 0,
           '访问统计', '如果缓存项目中选择了“内容页”且同时安装了willin kan的《Typecho 版 PostViews》,可以选“是”,开启缓存模式下的统计功能,否则会无法进行浏览量统计');
-        $form->addInput($cacheCounter);
+        $form->addInput($element);
 
-        $cacheTester = new Typecho_Widget_Helper_Form_Element_Radio(
+        $element = new Typecho_Widget_Helper_Form_Element_Radio(
           'cacheTester', array('0' => '关闭', '1' => '开启'), 0,
           '缓存检测', '缓存插件有木有生效,相信您一定很想知道。开启本项将会在页面的最下方显示缓存信息。注意一般情况下应该关闭本项。仅作测试之用。');
-        $form->addInput($cacheTester);
+        $form->addInput($element);
+
+        $list = array('关闭', '清除所有数据');
+        $element = new Typecho_Widget_Helper_Form_Element_Radio('is_clean', $list, 0, '清除所有数据');
+        $form->addInput($element);
     }
-     
+    /**
+     * 手动保存配置句柄
+     * @param $config array 插件配置
+     * @param $is_init bool 是否初始化
+     */
+    public static function configHandle($config, $is_init)
+    {
+        if ($is_init != true) {
+            try {
+                if ($config['is_clean'] == '1'){
+					self::resetCache();
+				}
+            } catch (Exception $e) {
+                print $e->getMessage();
+                die;
+            }
+            // 删除缓存仅生效一次
+            $config['is_clean'] = '0';
+        }
+
+        Helper::configPlugin('MostCache', $config);
+    }
     public static function getCache(){
     	global $noCache,$user;
 		Typecho_Widget::widget('Widget_User')->to($user);
@@ -96,7 +121,7 @@ class MostCache_Plugin implements Typecho_Plugin_Interface
         $installDb = Typecho_Db::get();
     	$config  = Helper::options()->plugin(self::$pluginName);
     	$request = new Typecho_Request;
-    	$requestHash = $request->getPathinfo();
+		$requestHash = $request->getPathinfo();
 		#尝试获取缓存
 		if($config->cacheType){
                     $s = implode('|',$config->cacheType);
@@ -114,6 +139,8 @@ class MostCache_Plugin implements Typecho_Plugin_Interface
                                                     $installDb->query("UPDATE ".$installDb->getPrefix()."contents SET views=views+1 WHERE cid='$cid'");
                                             }
                                     }
+									#解决搜索失效问题,检测到POST就不输出缓存
+									if(isset($_SERVER['REQUEST_METHOD']) && !strcasecmp($_SERVER['REQUEST_METHOD'],'POST'))return;
 									echo $cache;
                                     if($config->cacheTester) echo '<small style="font-size:10px;color:#bbb;">读取缓存内容::'.round((strlen($cache)/1024),2).'K</small>';
                                     exit;	
@@ -128,7 +155,7 @@ class MostCache_Plugin implements Typecho_Plugin_Interface
     	if(!$noCache) return;
     	
     	$request = new Typecho_Request;
-    	$requestHash = $request->getPathinfo();
+		$requestHash = $request->getPathinfo();
 		
 		#尝试存入缓存
 
@@ -262,9 +289,28 @@ class MostCache_Plugin implements Typecho_Plugin_Interface
 		$config  = Helper::options()->plugin(self::$pluginName);
 		$mc = new Memcache;
 		$mc->connect($config->mem_server, $config->mem_prot) or die ("连接memcached服务器失败");
+
+//        try{
+//            $mc = new Memcached;
+//            $mc->addServer($config->mem_server, $config->mem_prot);
+//        }catch (Exception $e){
+//            echo $e->getMessage();
+//        }
 		return $mc;
 	}
-        
+    public static function resetCache()
+    {
+		global $mc;
+		$installDb = Typecho_Db::get();
+ 		$config  = Helper::options()->plugin(self::$pluginName);
+		$table = $installDb->getPrefix().self::$tableName;
+		if($config->cacheMode=='Mysql'){
+			$installDb->query("TRUNCATE TABLE `$table`");
+		}else{
+			$mc = $mc?$mc:self::intSaeMc();
+			$mc->flush();
+		}
+    }
     public static function install()
 	{           
                                 
