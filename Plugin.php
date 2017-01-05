@@ -139,9 +139,9 @@ class MostCache_Plugin implements Typecho_Plugin_Interface
                                                     $installDb->query("UPDATE ".$installDb->getPrefix()."contents SET views=views+1 WHERE cid='$cid'");
                                             }
                                     }
-									#解决搜索失效问题,检测到POST就不输出缓存
-									if(isset($_SERVER['REQUEST_METHOD']) && !strcasecmp($_SERVER['REQUEST_METHOD'],'POST'))return;
-									echo $cache;
+					#解决搜索失效问题,检测到POST就不输出缓存
+				    if(isset($_GET['s'])||isset($_POST['s']))return;
+					echo $cache;
                                     if($config->cacheTester) echo '<small style="font-size:10px;color:#bbb;">读取缓存内容::'.round((strlen($cache)/1024),2).'K</small>';
                                     exit;	
                             }
