@@ -26,8 +26,8 @@ class MostCache_Plugin implements Typecho_Plugin_Interface
 		Typecho_Plugin::factory('Widget_Feedback')->finishComment = array(self::$pluginName . '_Plugin', 'delCache');
 		Typecho_Plugin::factory('Widget_Contents_Page_Edit')->write = array(self::$pluginName . '_Plugin', 'delCache');         
 		Typecho_Plugin::factory('Widget_Contents_Post_Edit')->write = array(self::$pluginName . '_Plugin', 'delCache');
-//        Helper::addAction('mostcache', 'MostCache_Action');
-//        Helper::addPanel(1, 'MostCache/panel.php', 'MostCache', 'MostCache缓存管理',   'administrator');
+        Helper::addAction('mostcache', 'MostCache_Action');
+        Helper::addPanel(1, 'MostCache/panel.php', 'MostCache', 'MostCache缓存管理',   'administrator');
         return _t($meg.'。请进行<a href="options-plugin.php?config='.self::$pluginName.'">初始化设置</a>');
     }
     
